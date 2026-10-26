@@ -13,7 +13,6 @@ config_by_name = {
 def create_app(config_name):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
-    print("DB URL:", app.config["SQLALCHEMY_DATABASE_URI"])
     db.init_app(app)
     migrate.init_app(app, db)
 
