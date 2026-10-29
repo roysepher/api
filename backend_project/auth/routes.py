@@ -40,14 +40,16 @@ def login():
             401,
         )
 
+    jwt_secret = current_app.config["JWT_SECRET"]
+    jwt_lifetime_seconds = current_app.config["JWT_LIFETIME_SECONDS"]
     now = datetime.now(timezone.utc)
     token = jwt.encode(
         {
             "sub": str(user.id),
             "role": user.role,
-            "exp": now + timedelta(seconds=current_app.config["JWT_LIFETIME_SECONDS"]),
+            "exp": now + timedelta(seconds=jwt_lifetime_seconds),
         },
-        current_app.config["JWT_SECRET"],
+        jwt_secret,
         algorithm="HS256",
     )
     return jsonify(access_token=token, token_type="Bearer"), 200
