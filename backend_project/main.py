@@ -70,11 +70,35 @@ def create_note():
 @bp.get("/notes")
 @require_auth
 def list_notes():
+    try:
+        page = int(request.args.get("page", "1"))
+        per_page = int(request.args.get("per_page", "10"))
+    except ValueError:
+        return error_response(
+            "bad_request",
+            "page and per_page must be positive integers",
+            400,
+        )
+
+    if page < 1 or per_page < 1:
+        return error_response(
+            "bad_request",
+            "page and per_page must be positive integers",
+            400,
+        )
+
+    total = db.session.scalar(
+        db.select(db.func.count()).select_from(Note).filter_by(user_id=g.user_id)
+    )
     notes = db.session.execute(
-        db.select(Note).filter_by(user_id=g.user_id)
+        db.select(Note)
+        .filter_by(user_id=g.user_id)
+        .order_by(Note.id)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
     ).scalars()
     return jsonify(
-        [
+        notes=[
             {
                 "id": note.id,
                 "user_id": note.user_id,
@@ -83,18 +107,22 @@ def list_notes():
                 "created_at": note.created_at.isoformat(),
             }
             for note in notes
-        ]
+        ],
+        page=page,
+        per_page=per_page,
+        total=total,
+        pages=(total + per_page - 1) // per_page,
     )
 
 
 @bp.get("/notes/<int:note_id>")
 @require_auth
 def get_note(note_id):
-    note = db.session.execute(
-        db.select(Note).filter_by(id=note_id, user_id=g.user_id)
-    ).scalar_one_or_none()
+    note = db.session.get(Note, note_id)
     if note is None:
         return error_response("note_not_found", "note not found", 404)
+    if note.user_id != g.user_id:
+        return error_response("forbidden", "you do not own this note", 403)
 
     return jsonify(
         id=note.id,
@@ -103,6 +131,72 @@ def get_note(note_id):
         content=note.content,
         created_at=note.created_at.isoformat(),
     )
+
+
+@bp.patch("/notes/<int:note_id>")
+@require_auth
+def update_note(note_id):
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or not data or set(data) - {"title", "content"}:
+        return error_response(
+            "invalid_field",
+            "request body must contain title and/or content only",
+            400,
+        )
+
+    if "title" in data:
+        title = data["title"]
+        if not isinstance(title, str) or not title.strip():
+            return error_response("invalid_field", "title must be a non-empty string", 400)
+        title = title.strip()
+        if len(title) > 200:
+            return error_response(
+                "invalid_field",
+                "title must be at most 200 characters",
+                400,
+            )
+    if "content" in data:
+        content = data["content"]
+        if not isinstance(content, str) or not content.strip():
+            return error_response(
+                "invalid_field",
+                "content must be a non-empty string",
+                400,
+            )
+
+    note = db.session.get(Note, note_id)
+    if note is None:
+        return error_response("note_not_found", "note not found", 404)
+    if note.user_id != g.user_id:
+        return error_response("forbidden", "you do not own this note", 403)
+
+    if "title" in data:
+        note.title = title
+    if "content" in data:
+        note.content = content
+
+    db.session.commit()
+    return jsonify(
+        id=note.id,
+        user_id=note.user_id,
+        title=note.title,
+        content=note.content,
+        created_at=note.created_at.isoformat(),
+    )
+
+
+@bp.delete("/notes/<int:note_id>")
+@require_auth
+def delete_note(note_id):
+    note = db.session.get(Note, note_id)
+    if note is None:
+        return error_response("note_not_found", "note not found", 404)
+    if note.user_id != g.user_id:
+        return error_response("forbidden", "you do not own this note", 403)
+
+    db.session.delete(note)
+    db.session.commit()
+    return "", 204
 
 
 @bp.get("/admin")
