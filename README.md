@@ -1,41 +1,41 @@
-# Flask API Backend
+## Running the app with Docker Compose
 
-## Setup
+1. Copy environment file:
 
-Clone the repository, create and activate a virtual environment, then install the project dependencies:
+   ```bash
+   cp .env.example .env
+   ```
 
-```bash
-git clone <repository-url>
-cd api
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+   Fill in the required values (for example `JWT_SECRET`, etc.).
+   You do not need to set `DATABASE_URL` for Docker Compose; it is provided by `docker-compose.yml`.
 
-On Windows, activate the virtual environment with `.venv\Scripts\activate`.
+2. Start the app and database:
 
-## Environment variables
+   ```bash
+   docker compose up --build
+   ```
 
-Copy `.env.example` to `.env` and fill in the values for your local environment:
+   This starts the `web` service (API) and the `db` service (PostgreSQL 16).
 
-```bash
-cp .env.example .env
-```
+3. Run database migrations inside the web container:
 
-Do not commit `.env`; it may contain secrets.
+   ```bash
+   docker compose exec web flask --app 'backend_project:create_app("development")' db upgrade
+   ```
 
-## Migrations
+4. Verify the app is running:
 
-The project uses Flask-Migrate for database schema changes. With the virtual environment active, apply the latest migrations with:
+   ```bash
+   curl -i http://localhost:8000/
+   ```
 
-```bash
-FLASK_APP='backend_project:create_app("development")' flask db upgrade
-```
+   Expected result: `HTTP/1.1 200 OK` with body `ok`.
 
-To create a migration after changing a model, run:
+5. Shut down and restart:
 
-```bash
-FLASK_APP='backend_project:create_app("development")' flask db migrate -m "describe the change"
-```
+   ```bash
+   docker compose down
+   docker compose up --build
+   ```
 
-Review generated migration files before applying them.
+   Hit `http://localhost:8000/` again to confirm the app still starts. Database data is stored in the `db_data` named volume.
