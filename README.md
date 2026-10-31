@@ -1,4 +1,4 @@
-## Running the app with Docker Compose
+## Running the app with Neon and Docker Compose
 
 1. Copy environment file:
 
@@ -6,36 +6,47 @@
    cp .env.example .env
    ```
 
-   Fill in the required values (for example `JWT_SECRET`, etc.).
-   You do not need to set `DATABASE_URL` for Docker Compose; it is provided by `docker-compose.yml`.
+   Set `JWT_SECRET` to a long random value. Neon fills in the database and Auth
+   URLs in the next step.
 
-2. Start the app and database:
-
-   ```bash
-   docker compose up --build
-   ```
-
-   This starts the `web` service (API) and the `db` service (PostgreSQL 16).
-
-3. Run database migrations inside the web container:
+2. Link this checkout to the Neon project and deploy its declared Postgres and
+   Auth services:
 
    ```bash
-   docker compose exec web flask --app 'backend_project:create_app("development")' db upgrade
+   npx neon@latest init -y --org-id org-raspy-firefly-85439177 \
+     --project-id morning-paper-37929930 --branch production \
+     --services postgres,auth
+   npx neon@latest deploy
    ```
 
-4. Verify the app is running:
+   The deploy command writes `DATABASE_URL`, `DATABASE_URL_UNPOOLED`,
+   `NEON_AUTH_BASE_URL`, and `NEON_AUTH_JWKS_URL` to `.env`.
+
+3. Build and start the API container:
 
    ```bash
-   curl -i http://localhost:8000/
+   docker compose up --build -d
    ```
 
-   Expected result: `HTTP/1.1 200 OK` with body `ok`.
-
-5. Shut down and restart:
+4. Apply migrations using Neon’s direct (unpooled) URL:
 
    ```bash
-   docker compose down
-   docker compose up --build
+   docker compose exec web sh -c \
+     'DATABASE_URL="$DATABASE_URL_UNPOOLED" flask --app '\''backend_project:create_app("production")'\'' db upgrade'
    ```
 
-   Hit `http://localhost:8000/` again to confirm the app still starts. Database data is stored in the `db_data` named volume.
+5. Verify the health endpoint:
+
+   ```bash
+   curl -i http://localhost:8000/health
+   ```
+
+   Expected result: `HTTP/1.1 200 OK` and `{"status":"ok"}`.
+
+6. Restart the API container:
+
+   ```bash
+   docker compose restart web
+   ```
+
+   Neon stores database data remotely; it is not tied to the container lifecycle.

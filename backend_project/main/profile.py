@@ -2,6 +2,7 @@ from flask import g, jsonify, request
 from sqlalchemy.exc import IntegrityError
 
 from ..auth.decorators import require_auth
+from ..db_errors import is_username_unique_violation
 from ..extensions import db
 from ..models import User
 from ..responses import error_response
@@ -57,10 +58,7 @@ def update_user_profile():
         db.session.commit()
     except IntegrityError as error:
         db.session.rollback()
-        if (
-            getattr(error.orig, "sqlite_errorname", None) != "SQLITE_CONSTRAINT_UNIQUE"
-            or str(error.orig) != "UNIQUE constraint failed: user.username"
-        ):
+        if not is_username_unique_violation(error):
             raise
         return error_response(
             "duplicate_username",
