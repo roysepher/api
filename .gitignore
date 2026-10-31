@@ -6,3 +6,6 @@ instance/
 *.db
 *.sqlite
 *.sqlite3
+.DS_Store
+.neon
+node_modules/
