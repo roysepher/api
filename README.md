@@ -49,13 +49,8 @@ curl -i http://127.0.0.1:5000/login \
   -d '{"username":"alice","password":"a-long-local-password"}'
 ```
 
-The login response contains an `access_token`. Send it as a bearer token to
-protected endpoints, for example:
-
-```bash
-curl http://127.0.0.1:5000/notes \
-  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN'
-```
+The login response contains an `access_token`. Send it in an `Authorization`
+header using the Bearer scheme when calling protected endpoints.
 
 ## Run with Docker Compose and Neon
 
@@ -131,6 +126,6 @@ docker compose down
 | `GET`, `PATCH`, `DELETE` | `/notes/<id>` | Read, update, or delete an owned note |
 | `GET` | `/admin` | Admin-only example endpoint |
 
-Protected routes require an `Authorization: Bearer <token>` header. Local
+Protected routes require a bearer token in the `Authorization` header. Local
 registration and login issue application JWTs. In production, the API can also
 accept Neon Auth access tokens when the Neon Auth URLs are configured.

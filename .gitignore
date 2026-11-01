@@ -1,11 +1,36 @@
+# Python environments and generated files
 .venv/
 venv/
-.env
 __pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# Local configuration and databases
+.env
+.env.*
+!.env.example
+.neon
 instance/
 *.db
 *.sqlite
 *.sqlite3
-.DS_Store
-.neon
+
+# JavaScript dependencies and logs
 node_modules/
+npm-debug.log*
+
+# Editor and OS files
+.DS_Store
+.vscode/*
+!.vscode/settings.json
