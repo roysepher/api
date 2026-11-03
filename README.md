@@ -16,11 +16,13 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-Set a local JWT secret. The development configuration uses SQLite
-(`instance/dev.db`) unless `DATABASE_URL` is set.
+Set a local JWT secret and explicitly select SQLite. These exported values
+apply to the migration and server commands below without overwriting an
+existing `.env` file.
 
 ```bash
-echo "JWT_SECRET=$(python -c 'import secrets; print(secrets.token_hex(32))')" > .env
+export JWT_SECRET="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+export DATABASE_URL=sqlite:///dev.db
 ```
 
 Create or update the database tables, then start the Flask development server:
@@ -35,6 +37,9 @@ The API is available at <http://127.0.0.1:5000>. Check that it is running:
 ```bash
 curl -i http://127.0.0.1:5000/health
 ```
+
+If port `5000` is already in use, start Flask with
+`--host 127.0.0.1 --port 5001` and use `http://127.0.0.1:5001/health`.
 
 The health endpoint should return `200 OK` with `{"status":"ok"}`. To register
 and log in locally, use a password between 12 and 128 characters:
@@ -82,8 +87,11 @@ and Neon Auth enabled. The existing [`neon.ts`](./neon.ts) declares Neon Auth.
 4. Verify the service:
 
    ```bash
-   curl -i http://localhost:8000/health
+   curl -i http://localhost:8001/health
    ```
+
+   Docker Compose maps host port `8001` to the container port `8000` by
+   default. Set `HOST_PORT` in `.env` to choose another host port.
 
 To view logs or stop the service:
 
