@@ -1,0 +1,4 @@
+{
+    "chat.permissions.default": "autoApprove",
+    "github.copilot.chat.localIndex.enabled": true
+}
