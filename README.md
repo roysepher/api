@@ -9,7 +9,7 @@ uses PostgreSQL and can validate tokens issued by Neon Auth.
 Requirements: Python 3.12 or newer.
 
 ```bash
-git clone https://github.com/dstroyseph/backend.git
+git clone https://github.com/roysepher/api
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
